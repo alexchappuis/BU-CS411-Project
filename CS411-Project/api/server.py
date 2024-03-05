@@ -63,18 +63,15 @@ def getChatGptData():
         temperature=0,
         max_tokens=100,
     )
-    print(chatGptResp)
     return json.loads(chatGptResp.model_dump_json())
 
 def getSpotifyData():
     token = getSpotifyToken()
-    print(token)
     headers = {
         "Authorization": "Bearer " + token
     }
     url = "https://api.spotify.com/v1/tracks/4a1ptzo1GXEjGDuhXd5ybn"
     response = requests.get(url=url, headers=headers, data={})
-    print("Response =======", response)
     return response.json()
 
 def getSpotifyToken():
