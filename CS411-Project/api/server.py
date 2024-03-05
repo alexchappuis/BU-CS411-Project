@@ -2,6 +2,10 @@ from flask import Flask, request
 import json
 import time
 import sqlite3
+import requests
+import base64
+from openai import OpenAI
+import apikeys
 
 from test import ExampleObject
 
@@ -10,6 +14,7 @@ ExampleObject.makeExampleTable()
 app = Flask(__name__)
 app.config["SERVER_NAME"] = "localhost:5000"
 app.config["CLIENT_NAME"] = "http://localhost:5173"
+chatGptClient = OpenAI(api_key = apikeys.CHATGPT_KEY)
 
 
 def jsonResponse(jsonData):
@@ -36,12 +41,57 @@ def jsonResponse(jsonData):
 # Get example data from all APIs
 @app.route("/exampleAPICalls", methods=["GET", "POST"])
 def exampleAPICalls():
-    steamResp = None
-    chatGPTResp = None
-    spotifyResp = None
+    steamData = getSteamData()
+    chatGptData = getChatGptData()
+    spotifyData = getSpotifyData()
     return jsonResponse(
-        {"steam": steamResp, "chatgpt": chatGPTResp, "spotify": spotifyResp}
+        {"steam": steamData, "chatgpt": chatGptData, "spotify": spotifyData}
     )
+
+def getSteamData():
+    steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, "76561198322874928", "false", "false", "json")
+    steamResponse = requests.get(steamURL)
+    return steamResponse.json()
+
+def getChatGptData():
+    MODEL = "gpt-3.5-turbo"
+    chatGptResp = chatGptClient.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "user", "content": "Write a poem about penguins"},
+        ],
+        temperature=0,
+        max_tokens=100,
+    )
+    print(chatGptResp)
+    return json.loads(chatGptResp.model_dump_json())
+
+def getSpotifyData():
+    token = getSpotifyToken()
+    print(token)
+    headers = {
+        "Authorization": "Bearer " + token
+    }
+    url = "https://api.spotify.com/v1/tracks/4a1ptzo1GXEjGDuhXd5ybn"
+    response = requests.get(url=url, headers=headers, data={})
+    print("Response =======", response)
+    return response.json()
+
+def getSpotifyToken():
+    auth = "%s:%s" % (apikeys.SPOTIFY_CLIENTID, apikeys.SPOTIFY_CLIENTSECRET)
+    authBytes = auth.encode("utf-8")
+    auth64 = str(base64.b64encode(authBytes), "utf-8")
+    url = "https://accounts.spotify.com/api/token"
+    headers = {
+        "Authorization": "Basic " + auth64,
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {
+        "grant_type": "client_credentials"
+    }
+    response = requests.post(url, headers=headers, data=data)
+    jsonData = json.loads(response.content)
+    return jsonData["access_token"]
 
 # Get all users
 @app.route("/allUsers", methods=["GET", "POST"])
