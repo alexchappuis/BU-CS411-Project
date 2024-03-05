@@ -43,6 +43,26 @@ def exampleAPICalls():
         {"steam": steamResp, "chatgpt": chatGPTResp, "spotify": spotifyResp}
     )
 
+# Get all users
+@app.route("/allUsers", methods=["GET", "POST"])
+def allUsers():
+    connection = sqlite3.connect("test.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT id FROM users")
+    rows = cursor.fetchall()
+
+    jsonData = []
+    for row in rows:
+        user = ExampleObject()
+        user.load_season(row[0])
+        jsonData += [user.toJSON()]
+
+    connection.commit()
+    connection.close()
+
+    return jsonResponse({"total": len(rows), "users": jsonData})
+
 
 # Insert and return data for new user in database
 @app.route("/insertUser", methods=["GET", "POST"])
