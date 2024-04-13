@@ -85,6 +85,16 @@ def getSteamData():
     steamResponse = requests.get(steamURL)
     return steamResponse.json()
 
+@app.route("/steamData", methods=["POST"])
+def getSteamUserData():
+    print("TEST===================")
+    data = request.get_json(force=True)
+    id = data["id"]
+    steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, id, "false", "false", "json")
+    steamResponse = requests.get(steamURL)
+    print(steamResponse.json())
+    return jsonResponse({"data": steamResponse.json()})
+
 def getChatGptData():
     MODEL = "gpt-3.5-turbo"
     chatGptResp = chatGptClient.chat.completions.create(

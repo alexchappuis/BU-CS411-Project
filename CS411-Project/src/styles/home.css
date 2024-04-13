@@ -54,6 +54,7 @@
 
 .searchBtn {
     background-color: rgb(30, 50, 65);
+    border-width: 0;
     color: white;
     padding: 15px 25px;
     border-radius: 20px;
@@ -65,4 +66,9 @@
     background-color: rgb(35, 60, 75);
     color: rgb(230, 230, 230);
     transition: all 0.2s linear;
+}
+
+.searchBtn:disabled {
+    background-color: rgb(70, 70, 70);
+    color: white;
 }
