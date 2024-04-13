@@ -1,0 +1,68 @@
+#spotifyLogin {
+    background-color: rgb(29, 185, 84);
+    filter: drop-shadow(10px 10px 4px rgb(40, 80, 40));
+    padding: 60px;
+    text-align: center;
+    font-size: xx-large;
+    border-radius: 30px;
+    min-height: 300px;
+}
+
+#spotifyLabel {
+    margin-bottom: 30px;
+}
+
+.spotifyBtn {
+    background-color: rgb(25, 150, 65);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.2s linear;
+}
+
+.spotifyBtn:hover {
+    background-color: rgb(28, 165, 72);
+    color: rgb(230, 230, 230);
+    transition: all 0.2s linear;
+}
+
+#steamSearch {
+    background-color: rgb(42, 71, 94);
+    filter: drop-shadow(10px 10px 4px rgb(21, 35, 47));
+    padding: 60px;
+    text-align: center;
+    font-size: xx-large;
+    border-radius: 30px;
+    min-height: 380px;
+}
+
+#searchLabel {
+    text-align: center;
+    font-size: xx-large;
+    padding-bottom: 15px;
+}
+
+#idSearch {
+    padding-bottom: 30px;
+}
+
+#idSearchEntry {
+    padding: 5px;
+    border-radius: 10px;
+}
+
+.searchBtn {
+    background-color: rgb(30, 50, 65);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.2s linear;
+}
+
+.searchBtn:hover {
+    background-color: rgb(35, 60, 75);
+    color: rgb(230, 230, 230);
+    transition: all 0.2s linear;
+}
