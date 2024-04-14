@@ -1,3 +1,4 @@
+import urllib.parse
 from flask import Flask, request, session
 import json
 import time
@@ -9,6 +10,8 @@ from openai import OpenAI
 import apikeys
 import routes
 import jsonify
+import math
+import urllib
 
 from test import ExampleObject
 
@@ -45,7 +48,7 @@ def jsonResponse(jsonData):
 @app.route("/exampleAPICalls", methods=["GET", "POST"])
 def exampleAPICalls():
     steamData = getSteamData()
-    chatGptData = getChatGptData()
+    chatGptData = [] #getChatGptData()
     spotifyData = getSpotifyData()
     return jsonResponse(
         {"steam": steamData, "chatgpt": chatGptData, "spotify": spotifyData}
@@ -85,15 +88,131 @@ def getSteamData():
     steamResponse = requests.get(steamURL)
     return steamResponse.json()
 
-@app.route("/steamData", methods=["POST"])
-def getSteamUserData():
-    print("TEST===================")
+@app.route("/generatePlaylist", methods=["POST"])
+def generatePlaylist():
+    #get user ID and spotify token
     data = request.get_json(force=True)
     id = data["id"]
-    steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, id, "false", "false", "json")
+    token = data["spotify_token"]
+    top5 = getTopGames(id, 5)
+    imageUrls = getGameBanners(top5)
+    numSongs = calculateNumSongs(top5)
+    songInfos = getSpotifySongs(top5, numSongs, token)
+    return jsonResponse({"games": top5, "img_urls": imageUrls, "num_songs": numSongs, "songs": songInfos})
+
+
+#get top 5 games by playtime of the associated user
+def getTopGames(id, length):
+    steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, id, "true", "true", "json")
     steamResponse = requests.get(steamURL)
-    print(steamResponse.json())
-    return jsonResponse({"data": steamResponse.json()})
+    games = steamResponse.json()["response"]["games"]
+    #sort games owned by playtime
+    sortedGames = sorted(games, key=lambda game: -game["playtime_forever"])
+    return sortedGames[:length]
+
+#get banners of each game in top 5 most played
+def getGameBanners(games):
+    imageUrls = [""] * len(games)
+    for i in range(len(games)):
+        id = games[i]["appid"]
+        infoUrl = "https://store.steampowered.com/api/appdetails?appids=%s" % (id)
+        gameInfo = requests.get(infoUrl)
+        imageUrls[i] = gameInfo.json()[str(id)]["data"]["header_image"]
+    return imageUrls
+
+#calculate number of songs from each game to put in playlist based on playtime
+def calculateNumSongs(games):
+    totalTime = 0
+    for game in games:
+        totalTime += game["playtime_forever"]
+    numSongs = [0] * len(games)
+    total = 0
+    for i in range(len(games)):
+        percent = games[i]["playtime_forever"] / totalTime
+        numSongs[i] = math.floor(20 * percent)
+        total += numSongs[i]
+    #rounding will probably mean we won't have exactly 20 songs total,
+    #so just give #1 game the remaining spots
+    if total < 20:
+        numSongs[0] += 20 - total
+    return numSongs
+
+def getSpotifySongs(games, numSongs, token):
+    songInfos = [{}] * len(games)
+    for game in range(len(games)):
+        #curl --request GET \
+        #--url 'https://api.spotify.com/v1/search?q=Terraria&type=track&limit=7&offset=0' \
+        #--header 'Authorization: Bearer 1POdFZRZbvb...qqillRxMr2z'
+        endpoint = "https://api.spotify.com/v1/search?"
+        gameName = games[game]["name"]
+        params = {"q": gameName, "type": "track", "limit": numSongs[game], "offset": 0}
+        url = endpoint + urllib.parse.urlencode(params)
+        headers = {
+            "Authorization": "Bearer " + token
+        }
+        response = requests.get(url=url, headers=headers, data={})
+        respJson = response.json()
+        print("============", respJson)
+        songs = [{}] * numSongs[game]
+        print("length", len(songs))
+        for i in range(numSongs[game]):
+            song = respJson["tracks"]["items"][i]
+            id = song["id"]
+            name = song["name"]
+            duration = song["duration_ms"]
+            coverUrl = song["album"]["images"][0]["url"]
+            previewUrl = song["preview_url"]
+            info = {
+                "id": id,
+                "name": name,
+                "duration": duration,
+                "cover_url": coverUrl,
+                "preview_url": previewUrl,
+            }
+            print(i)
+            songs[i] = info
+        songInfos[game] = songs
+    return songInfos
+    
+
+
+@app.route("/steamData", methods=["POST"])
+def getSteamUserData():
+    #get user ID
+    data = request.get_json(force=True)
+    id = data["id"]
+    steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, id, "true", "true", "json")
+    steamResponse = requests.get(steamURL)
+    games = steamResponse.json()["response"]["games"]
+    #sort games owned by playtime
+    sortedGames = sorted(games, key=lambda game: -game["playtime_forever"])
+    imageUrls = [""] * 5
+    totalTime = 0
+    #get banners of each game in top 5 most played
+    for i in range(5):
+        id = sortedGames[i]["appid"]
+        infoUrl = "https://store.steampowered.com/api/appdetails?appids=%s" % (id)
+        gameInfo = requests.get(infoUrl)
+        imageUrls[i] = gameInfo.json()[str(id)]["data"]["header_image"]
+        totalTime += sortedGames[i]["playtime_forever"]
+    #calculate number of songs to put in playlist based on playtime
+    numSongs = [0] * 5
+    total = 0
+    for i in range(5):
+        percent = sortedGames[i]["playtime_forever"] / totalTime
+        numSongs[i] = math.floor(20 * percent)
+        total += numSongs[i]
+    #rounding will probably mean we won't have exactly 20 songs total,
+    #so just give #1 game the remaining spots
+    if total < 20:
+        numSongs[0] += 20 - total
+    return jsonResponse({"games": sortedGames[:5], "img_urls": imageUrls, "num_songs": numSongs})
+
+@app.route("/chatGptRecs", methods=["POST"])
+def getChatGptRecs():
+    data = request.get_json(force=True)
+    games = data["games"]
+
 
 def getChatGptData():
     MODEL = "gpt-3.5-turbo"
