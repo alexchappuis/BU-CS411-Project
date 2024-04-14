@@ -27,7 +27,7 @@ const GameRecord = ( {name, id, hoursPlayed, rank, coverUrl }: Props) => {
   return (
     <Row>
       <Col sm={{span: 1, offset: 0}} className="doubleCenterContainer">
-        <h1>{rankDisplay}</h1>
+        {rankDisplay}
       </Col>
       <Col sm={{span: 4, offset: 0}} className="gameCover">
         <img src={coverUrl} alt={name + " Cover"} />

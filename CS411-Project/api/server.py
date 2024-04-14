@@ -138,7 +138,7 @@ def calculateNumSongs(games):
     return numSongs
 
 def getSpotifySongs(games, numSongs, token):
-    songInfos = [{}] * len(games)
+    songInfos = []
     for game in range(len(games)):
         #curl --request GET \
         #--url 'https://api.spotify.com/v1/search?q=Terraria&type=track&limit=7&offset=0' \
@@ -152,9 +152,6 @@ def getSpotifySongs(games, numSongs, token):
         }
         response = requests.get(url=url, headers=headers, data={})
         respJson = response.json()
-        print("============", respJson)
-        songs = [{}] * numSongs[game]
-        print("length", len(songs))
         for i in range(numSongs[game]):
             song = respJson["tracks"]["items"][i]
             id = song["id"]
@@ -169,9 +166,7 @@ def getSpotifySongs(games, numSongs, token):
                 "cover_url": coverUrl,
                 "preview_url": previewUrl,
             }
-            print(i)
-            songs[i] = info
-        songInfos[game] = songs
+            songInfos += [info]
     return songInfos
     
 
