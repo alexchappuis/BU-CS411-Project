@@ -13,9 +13,11 @@ export const LOGIN = `${SPOTIFY_AUTH_URL}?client_id=${KEYS.SPOTIFY_CLIENTID}&red
 export const STEAM_USER_URL = (id: string) =>
     `http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${KEYS.ISTEAMUSER_KEY}&steamid=${id}&include_appinfo=${"false"}&include_played_free_games=${"false"}&format=${"json"}`
 
+
 // SERVER SIDE
 const SERVER_URL = "http://localhost:5000";
 export const SERVER_GET_STEAM_USER = SERVER_URL + "/steamData";
+export const SERVER_GENERATE_PLAYLIST = SERVER_URL + "/generatePlaylist";
 
 // OTHER
 export const GITHUB = "https://github.com/alexchappuis/BU-CS411-Project/tree/main";

@@ -1,0 +1,28 @@
+#spotifyLogin {
+    background-color: rgb(29, 185, 84);
+    filter: drop-shadow(10px 10px 4px rgb(40, 80, 40));
+    padding: 60px;
+    text-align: center;
+    font-size: xx-large;
+    border-radius: 30px;
+    min-height: 300px;
+}
+
+#spotifyLabel {
+    margin-bottom: 30px;
+}
+
+.spotifyBtn {
+    background-color: rgb(25, 150, 65);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.2s linear;
+}
+
+.spotifyBtn:hover {
+    background-color: rgb(28, 165, 72);
+    color: rgb(230, 230, 230);
+    transition: all 0.2s linear;
+}

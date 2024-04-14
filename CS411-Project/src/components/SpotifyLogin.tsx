@@ -4,6 +4,8 @@ import { Row } from 'react-bootstrap';
 import * as ROUTES from "../global/routes";
 import * as CONTEXTS from "../global/contexts";
 
+import "../styles/spotifyLogin.css";
+
 const SpotifyLogin = () => {
   const [username, setUsername] = useState("");
   const tokenCon = useContext(CONTEXTS.TokenContext);
