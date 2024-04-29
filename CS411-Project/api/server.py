@@ -51,7 +51,25 @@ def exampleAPICalls():
 def getSteamData():
     steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, "76561198322874928", "false", "false", "json")
     steamResponse = requests.get(steamURL)
-    return steamResponse.json()
+    steamData = steamResponse.json()
+
+    connection = sqlite3.connect("test.db")
+    cursor = connection.cursor()
+
+    for game in steamData["response"]["games"]:
+        cursor.execute("SELECT play_count FROM steam_games WHERE app_id=?", (game["appid"],))
+        result = cursor.fetchone()
+        if result:
+            play_count = result[0] + 1
+            cursor.execute("UPDATE steam_games SET play_count=? WHERE app_id=?", (play_count, game["appid"]))
+        else:
+            cursor.execute("INSERT INTO steam_games (app_id, name, play_count) VALUES (?, ?, 1)", (game["appid"], game["name"]))
+
+    connection.commit()
+    connection.close()
+
+    return steamData
+
 
 def getChatGptData():
     MODEL = "gpt-3.5-turbo"
