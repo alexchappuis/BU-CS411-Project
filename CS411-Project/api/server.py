@@ -136,6 +136,31 @@ def insertUser():
     user.insert_user()
     return jsonResponse({"name": user.name, "favGame": user.favGame})
 
+def makeExampleTable():
+        """
+        Create the example table in test.db if it doesn't yet exist.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+
+        connection = sqlite3.connect("test.db")
+        cursor = connection.cursor()
+        sql = """CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            favGame TEXT NOT NULL
+        );"""
+        cursor.execute(sql)
+        connection.commit()
+        connection.close()
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
