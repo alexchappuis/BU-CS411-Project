@@ -86,7 +86,25 @@ def callback():
 def getSteamData():
     steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, "76561198322874928", "false", "false", "json")
     steamResponse = requests.get(steamURL)
-    return steamResponse.json()
+    steamData = steamResponse.json()
+
+    connection = sqlite3.connect("test.db")
+    cursor = connection.cursor()
+
+    for game in steamData["response"]["games"]:
+        cursor.execute("SELECT play_count FROM steam_games WHERE app_id=?", (game["appid"],))
+        result = cursor.fetchone()
+        if result:
+            play_count = result[0] + 1
+            cursor.execute("UPDATE steam_games SET play_count=? WHERE app_id=?", (play_count, game["appid"]))
+        else:
+            cursor.execute("INSERT INTO steam_games (app_id, name, play_count) VALUES (?, ?, 1)", (game["appid"], game["name"]))
+
+    connection.commit()
+    connection.close()
+
+    return steamData
+
 
 @app.route("/generatePlaylist", methods=["POST"])
 def generatePlaylist():
@@ -273,6 +291,31 @@ def insertUser():
     user = ExampleObject("Bob", "Minecraft")
     user.insert_user()
     return jsonResponse({"name": user.name, "favGame": user.favGame})
+
+def makeExampleTable():
+        """
+        Create the example table in test.db if it doesn't yet exist.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+
+        connection = sqlite3.connect("test.db")
+        cursor = connection.cursor()
+        sql = """CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            favGame TEXT NOT NULL
+        );"""
+        cursor.execute(sql)
+        connection.commit()
+        connection.close()
+
 
 
 if __name__ == "__main__":
