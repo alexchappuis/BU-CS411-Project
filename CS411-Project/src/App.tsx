@@ -12,9 +12,12 @@ import "./App.css";
 
 function App() {
   const [token, setToken] = useState("");
+  const [login, setLogin] = useState<CONTEXTS.SpotifyLogin>(
+    {token: "", refreshToken: "", expiration: 0}
+  );
   return (
     <div id="app">
-      <CONTEXTS.TokenContext.Provider value={{token, setToken}}>
+      <CONTEXTS.SpotifyContext.Provider value={{login, setLogin}}>
         <Header />
         <BrowserRouter>
           <div>
@@ -24,7 +27,7 @@ function App() {
           </div>
         </BrowserRouter>
         <Footer />
-      </CONTEXTS.TokenContext.Provider>
+      </CONTEXTS.SpotifyContext.Provider>
     </div>
   );
 }

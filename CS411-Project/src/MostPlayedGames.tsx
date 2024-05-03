@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 const MostPlayedGames: React.FC = () => {
   const [mostPlayedGames, setMostPlayedGames] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/mostPlayedGames')
-      .then(response => {
-        setMostPlayedGames(response.data);
+    fetch('http://localhost:5000/mostPlayedGames')
+      .then(resp => resp.json())
+      .then(data => {
+        setMostPlayedGames(data);
       })
       .catch(error => {
         console.error('Error fetching most played games:', error);
