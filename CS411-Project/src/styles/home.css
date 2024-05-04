@@ -1,9 +1,9 @@
-#gamesList {
+.gamesList {
     margin-top: 50px;
     padding: 50px;
 }
 
-#gameDesc {
+.gameDesc {
     background-color: rgb(180,230,230);
     color: black;
     align-content: center;
@@ -106,4 +106,17 @@
 
 .verticalCenter h6 {
     font-size: 2vh;
+}
+
+#generateContainer {
+    background-color: rgb(29, 185, 84);
+    filter: drop-shadow(10px 10px 4px rgb(40, 80, 40));
+    padding: 60px;
+    text-align: center;
+    font-size: xx-large;
+    border-radius: 30px;
+}
+
+#generateContainer button {
+    border-width: 0;
 }

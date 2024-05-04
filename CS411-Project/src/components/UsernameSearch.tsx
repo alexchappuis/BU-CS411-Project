@@ -10,6 +10,7 @@ import "../styles/steamSearch.css";
 
 const UsernameSearch = () => {
   const tokenCon = useContext(CONTEXTS.TokenContext);
+  const spotifyCon = useContext(CONTEXTS.SpotifyContext);
   const gamesCon = useContext(CONTEXTS.SteamContext);
   const playlistCon = useContext(CONTEXTS.PlaylistContext);
   const [id, setId] = useState("");

@@ -8,7 +8,7 @@ import "../styles/spotifyLogin.css";
 
 const SpotifyLogin = () => {
   const [username, setUsername] = useState("");
-  // const tokenCon = useContext(CONTEXTS.TokenContext);
+  const tokenCon = useContext(CONTEXTS.TokenContext);
   const spotifyCon = useContext(CONTEXTS.SpotifyContext)
 
   useEffect(() => {
@@ -17,7 +17,7 @@ const SpotifyLogin = () => {
     let localRefresh = window.localStorage.getItem("refresh_token")
     let localExpiration = window.localStorage.getItem("expiration")
     if(localToken && localRefresh && localExpiration) {
-      // tokenCon.setToken(localToken);
+      tokenCon.setToken(localToken);
       spotifyCon.setLogin({token: localToken, refreshToken: localRefresh, expiration: parseInt(localExpiration)})
     }
     else if(hash) {
@@ -27,7 +27,7 @@ const SpotifyLogin = () => {
             let tokenString = atString.split("=")[1];
             window.location.hash = "";
             window.localStorage.setItem("token", tokenString)
-            // tokenCon.setToken(tokenString);
+            tokenCon.setToken(tokenString);
         } else {
             console.error("Could not get Spotify OAuth access token.");
         }
@@ -55,21 +55,13 @@ const SpotifyLogin = () => {
   }
   return (
     <div id="spotifyLogin">
-      {/* {username && <>
-        <Row id="spotifyLabel">
-        
-        </Row>
-        <Row className="spotifyBtn">
-
-        </Row>
-      </>} */}
       <Row id="spotifyLabel">
-          {username && <small>Currently signed in as <br/> <b>{username}</b></small>}
-          {!username && <small>Not logged in</small>}
+        {username && <small>Currently signed in as <br/> <b>{username}</b></small>}
+        {!username && <small>Not logged in</small>}
       </Row>
       <Row>
-        {spotifyCon.login && <a className="spotifyBtn" onClick={logout} href="">Logout</a>}
-        {!spotifyCon.login && <a className="spotifyBtn" href={ROUTES.LOGIN}>Spotify Login</a>}
+        {username && <a className="spotifyBtn" onClick={logout} href="">Logout</a>}
+        {!username && <a className="spotifyBtn" href={ROUTES.LOGIN}>Spotify Login</a>}
       </Row>
     </div>
   )

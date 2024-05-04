@@ -3,6 +3,7 @@ import * as KEYS from "./apikeys";
 // CLIENT SIDE
 const CLIENT_URL = "http://localhost:5173"
 export const HOME = "/";
+export const MOST_PLAYED = "/mostPlayed";
 
 // CLIENT SIDE - 3RD PARTY APIS
 const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -18,6 +19,7 @@ export const STEAM_USER_URL = (id: string) =>
 const SERVER_URL = "http://localhost:5000";
 export const SERVER_GET_STEAM_USER = SERVER_URL + "/steamData";
 export const SERVER_GENERATE_PLAYLIST = SERVER_URL + "/generatePlaylist";
+export const SERVER_CREATE_PLAYLIST = SERVER_URL + "/addPlaylist"
 
 // OTHER
 export const GITHUB = "https://github.com/alexchappuis/BU-CS411-Project/tree/main";

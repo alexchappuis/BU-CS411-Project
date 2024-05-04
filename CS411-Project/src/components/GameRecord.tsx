@@ -4,11 +4,12 @@ interface Props {
     name: string;
     id: number;
     hoursPlayed: number;
+    usersPlayed?: number;
     rank: number;
     coverUrl: string;
 }
 
-const GameRecord = ( {name, id, hoursPlayed, rank, coverUrl }: Props) => {
+const GameRecord = ( {name, id, hoursPlayed, usersPlayed, rank, coverUrl }: Props) => {
   let rankDisplay;
   switch(rank) {
     case 1:
@@ -37,6 +38,8 @@ const GameRecord = ( {name, id, hoursPlayed, rank, coverUrl }: Props) => {
           <h1>{name}</h1>
           <h6>ID: {id}</h6>
           <h3>{hoursPlayed} hours played</h3>
+          {usersPlayed && usersPlayed > 1 && <h3>{usersPlayed} unique users have played this game</h3>}
+          {usersPlayed && usersPlayed === 1 && <h3>{usersPlayed} unique user has played this game</h3>}
         </div>
       </Col>
     </Row>

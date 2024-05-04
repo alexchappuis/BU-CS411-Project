@@ -39,6 +39,7 @@ function Header() {
           <Navbar.Collapse className="justify-content-end" id="basic-navbar-nav">
             <Nav>
               <Nav.Link href={ROUTES.HOME}>Home</Nav.Link>
+              <Nav.Link href={ROUTES.MOST_PLAYED}>Top Games</Nav.Link>
               {tokenCon.token && <Nav.Link onClick={logout}>Logout</Nav.Link>}
               {!tokenCon.token && <Nav.Link href={ROUTES.LOGIN}>Spotify Login</Nav.Link>}
             </Nav>

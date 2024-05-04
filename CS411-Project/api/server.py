@@ -15,8 +15,6 @@ import urllib
 
 from test import ExampleObject
 
-ExampleObject.makeExampleTable()
-
 app = Flask(__name__)
 app.config["SERVER_NAME"] = "localhost:5000"
 app.config["CLIENT_NAME"] = "http://localhost:5173"
@@ -56,7 +54,7 @@ def exampleAPICalls():
 
 @app.route("/login")
 def login():
-    scope = "user-read-private user-read-email"
+    scope = "user-read-private user-read-email user-library-read"
     params = {
         "client_id": apikeys.SPOTIFY_CLIENTID,
         "response_type": "code",
@@ -95,16 +93,36 @@ def getSteamData():
         cursor.execute("SELECT play_count FROM steam_games WHERE app_id=?", (game["appid"],))
         result = cursor.fetchone()
         if result:
-            play_count = result[0] + 1
-            cursor.execute("UPDATE steam_games SET play_count=? WHERE app_id=?", (play_count, game["appid"]))
+            play_count = result[1] + 1
+            cursor.execute("UPDATE steam_games SET play_count=?, play_time=? WHERE app_id=?", (play_count, game["playtime_forever"], game["appid"]))
         else:
-            cursor.execute("INSERT INTO steam_games (app_id, name, play_count) VALUES (?, ?, 1)", (game["appid"], game["name"]))
+            cursor.execute("INSERT INTO steam_games (app_id, name, play_count, play_time) VALUES (?, ?, 1, ?)", (game["appid"], game["name"], game["playtime_forever"]))
 
     connection.commit()
     connection.close()
 
     return steamData
 
+def updateDatabase(user_id, steamData):
+    connection = sqlite3.connect("test.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+    result = cursor.fetchone()
+    if result is None:
+        cursor.execute("INSERT INTO users (user_id) VALUES (?)", (user_id,))
+        for game in steamData["response"]["games"]:
+            cursor.execute("SELECT play_count, play_time FROM steam_games WHERE app_id=?", (game["appid"],))
+            result = cursor.fetchone()
+            if result:
+                play_count = result[0] + 1
+                play_time = result[1] + game["playtime_forever"]
+                cursor.execute("UPDATE steam_games SET play_count=?, play_time=? WHERE app_id=?", (play_count, play_time, game["appid"]))
+            else:
+                cursor.execute("INSERT INTO steam_games (app_id, name, play_count, play_time) VALUES (?, ?, 1, ?)", (game["appid"], game["name"], game["playtime_forever"]))
+
+    connection.commit()
+    connection.close()
 
 @app.route("/generatePlaylist", methods=["POST"])
 def generatePlaylist():
@@ -119,23 +137,28 @@ def generatePlaylist():
     return jsonResponse({"games": top5, "img_urls": imageUrls, "num_songs": numSongs, "songs": songInfos})
 
 
-#get top 5 games by playtime of the associated user
+#get top (length) games by playtime of the associated user
 def getTopGames(id, length):
     steamURL = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=%s&include_played_free_games=%s&format=%s" % (apikeys.ISTEAMUSER_KEY, id, "true", "true", "json")
     steamResponse = requests.get(steamURL)
+    updateDatabase(id, steamResponse.json())
     games = steamResponse.json()["response"]["games"]
     #sort games owned by playtime
     sortedGames = sorted(games, key=lambda game: -game["playtime_forever"])
     return sortedGames[:length]
+
+#get banner of singular game
+def getGameBanner(id):
+    infoUrl = "https://store.steampowered.com/api/appdetails?appids=%s" % (id)
+    gameInfo = requests.get(infoUrl)
+    return gameInfo.json()[str(id)]["data"]["header_image"]
 
 #get banners of each game in top 5 most played
 def getGameBanners(games):
     imageUrls = [""] * len(games)
     for i in range(len(games)):
         id = games[i]["appid"]
-        infoUrl = "https://store.steampowered.com/api/appdetails?appids=%s" % (id)
-        gameInfo = requests.get(infoUrl)
-        imageUrls[i] = gameInfo.json()[str(id)]["data"]["header_image"]
+        imageUrls[i] = getGameBanner(id)
     return imageUrls
 
 #calculate number of songs from each game to put in playlist based on playtime
@@ -187,7 +210,91 @@ def getSpotifySongs(games, numSongs, token):
             songInfos += [info]
     return songInfos
     
+#initialize table for steam game play count
+def createTables():
+    connection = sqlite3.connect("test.db")
+    cursor = connection.cursor()
+    sql = """CREATE TABLE IF NOT EXISTS steam_games (
+        app_id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        play_count INTEGER NOT NULL,
+        play_time INTEGER NOT NULL
+    );"""
+    cursor.execute(sql)
+    sql = """CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY
+    );"""
+    cursor.execute(sql)
+    connection.commit()
+    connection.close()
 
+#get top 10 most played games across all users
+@app.route("/mostPlayedGames", methods=["GET"])
+def mostPlayedGames():
+    connection = sqlite3.connect("test.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM steam_games")
+    rows = cursor.fetchall()
+
+    connection.commit()
+    connection.close()
+
+    sortedGames = sorted(rows, key=lambda game: -game[3])
+    gamesJson = []
+    for i in range(10):
+        game = sortedGames[i]
+        gamesJson += [{
+            "app_id": game[0],
+            "name": game[1],
+            "play_count": game[2],
+            "play_time": game[3],
+            "rank": i+1,
+            "banner_url": getGameBanner(game[0])
+        }]
+    return jsonResponse(gamesJson)
+
+@app.route("/addPlaylist", methods=["POST"])
+def addPlaylist():
+    #get user ID and spotify token
+    data = request.get_json(force=True)
+    user_id = "31x6jp2buqjwabztxvxeugfzfnue" #data["spotify_id"]
+    token = data["spotify_token"]
+    song_ids = data["song_ids"]
+    song_uris = []
+    for id in song_ids:
+        song_uris += ["spotify:track:" + id]
+    endpoint_url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
+    request_body = json.dumps({
+        "name": "My Top Games",
+        "description": "Playlist generated by good ol\' fashioned code.",
+        "public": False
+    })
+    response = requests.post(
+        url = endpoint_url,
+        data = request_body,
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+    )
+    print("playlist json", response.json())
+    playlistId = response.json()["id"]
+    endpoint_url = f"https://api.spotify.com/v1/playlists/{playlistId}/tracks"
+
+    request_body = json.dumps({
+        "uris" : song_uris
+    })
+    response = requests.post(
+        url = endpoint_url,
+        data = request_body,
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+    )
+    print(response.json())
+    return jsonResponse({"status_code": 200})
 
 @app.route("/steamData", methods=["POST"])
 def getSteamUserData():
@@ -264,33 +371,8 @@ def getSpotifyToken():
     jsonData = json.loads(response.content)
     return jsonData["access_token"]
 
-# Get all users
-@app.route("/allUsers", methods=["GET", "POST"])
-def allUsers():
-    connection = sqlite3.connect("test.db")
-    cursor = connection.cursor()
 
-    cursor.execute("SELECT id FROM users")
-    rows = cursor.fetchall()
-
-    jsonData = []
-    for row in rows:
-        user = ExampleObject()
-        user.load_season(row[0])
-        jsonData += [user.toJSON()]
-
-    connection.commit()
-    connection.close()
-
-    return jsonResponse({"total": len(rows), "users": jsonData})
-
-
-# Insert and return data for new user in database
-@app.route("/insertUser", methods=["GET", "POST"])
-def insertUser():
-    user = ExampleObject("Bob", "Minecraft")
-    user.insert_user()
-    return jsonResponse({"name": user.name, "favGame": user.favGame})
+createTables()
 
 if __name__ == "__main__":
     app.run(debug=True)
